@@ -2,16 +2,15 @@ import discord
 from discord.ext import commands
 from prices import *
 
-client = commands.Bot(command_prefix='!')
+bot = commands.Bot(command_prefix="!", description="Stock information bot")
 
-
-@client.event
+@bot.event
 async def on_ready():
-    print('Ready')
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name = "over 100 stocks!"))
 
 
-@client.command()
+@bot.command()
 async def price(ctx, stock):
     await ctx.send(get_price(stock))
 
-client.run('NzQ2ODQ2ODMzMDc4MzA0Nzk5.X0GRUA.uHNvXvmOgRg9fDtrT4h0vQc8KtI')
+bot.run('NzQ2ODQ2ODMzMDc4MzA0Nzk5.X0GRUA.uHNvXvmOgRg9fDtrT4h0vQc8KtI')
