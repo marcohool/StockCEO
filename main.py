@@ -1,16 +1,22 @@
 import discord
 from discord.ext import commands
-from prices import *
+from prices import get_price
+from ruamel.yaml import YAML
 
-bot = commands.Bot(command_prefix="!", description="Stock information bot")
+yaml = YAML()
+
+with open("./config.yml", "r", encoding="utf-8") as file:
+    config = yaml.load(file)
+
+bot = commands.Bot(command_prefix=config["Prefix"], description="Stock information bot")
 
 @bot.event
 async def on_ready():
-    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name = "over 100 stocks!"))
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name = config["Watching Status"]))
 
 
 @bot.command()
 async def price(ctx, stock):
     await ctx.send(get_price(stock))
 
-bot.run('NzQ2ODQ2ODMzMDc4MzA0Nzk5.X0GRUA.uHNvXvmOgRg9fDtrT4h0vQc8KtI')
+bot.run(config["Token"])
