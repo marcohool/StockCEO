@@ -8,27 +8,25 @@ class StockInfo(commands.Cog):
         self.bot = bot
 
     @commands.command()
-    async def price(self, ctx, stock: str):
+    async def stats(self, ctx, stock: str):
         r = requests.get('https://finance.yahoo.com/quote/' + stock + '/')
         html = BeautifulSoup(r.text, features='html.parser')
-        price = html.find('span', {"Trsdu(0.3s) Fw(b) Fz(36px) Mb(-4px) D(ib)"}).text
-        currency = html.find("div", {"C($tertiaryColor) Fz(12px)"}).text
-
-        if (currency.endswith("USD")):
-            currencySymbol = "$"
-        elif (currency.endswith("GBp")):
-            currencySymbol = "£"
-            price = float(price)/100
-        elif (currency.endswith("EUR")):
-            currencySymbol = "€"
 
         try:
             performance = html.find("span", {"Trsdu(0.3s) Fw(500) Pstart(10px) Fz(24px) C($positiveColor)"}).text
         except Exception:
-            performance = html.find("span", {"Trsdu(0.3s) Fw(500) Pstart(10px) Fz(24px) C($negativeColor)"}).text
+            try:
+                performance = html.find("span", {"Trsdu(0.3s) Fw(500) Pstart(10px) Fz(24px) C($negativeColor)"}).text
+            except Exception:
+                await ctx.send("Please enter a valid stock symbol (e.g. TSLA)")
+                return
+        
+        price = html.find('span', {"Trsdu(0.3s) Fw(b) Fz(36px) Mb(-4px) D(ib)"}).text
+        currency = html.find("div", {"C($tertiaryColor) Fz(12px)"}).text
+        correctCurrency = currency.split()
+
 
         name = html.find('h1', {"D(ib) Fz(18px)"}).text
-
         performanceSplit = performance.split()
 
         if performanceSplit[1][1] == "+":
@@ -36,7 +34,7 @@ class StockInfo(commands.Cog):
         else:
             color = discord.Color(value=int("FF0000", 16))
         
-        embed = discord.Embed(title=name, description = (f"{currencySymbol}{price} {performanceSplit[1]}"), color = color)
+        embed = discord.Embed(title=(f"{name} | {correctCurrency[len(correctCurrency)-1]}"), description = (f"{price} {performanceSplit[1]}"), color = color)
 
         await ctx.send(embed=embed)
 
