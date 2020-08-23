@@ -19,10 +19,6 @@ for file in os.listdir("cogs"):
         name = file[:-3]
         bot.load_extension(f"cogs.{name}")
 
-# @bot.command()
-# async def price(ctx, stock):
-#     await ctx.send(get_price(stock))
-
 try:
     bot.run(config["Token"])
 except Exception as e:

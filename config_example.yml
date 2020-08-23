@@ -4,5 +4,8 @@ Token:
 # Bot prefix
 Prefix: "!"
 
+# Discord IDs of owners
+Owners: 
+
 # Bot status displayed on Discord
 Watching Status: " over 100 stocks!"
