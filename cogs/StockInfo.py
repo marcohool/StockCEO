@@ -14,7 +14,7 @@ class StockInfo(commands.Cog):
 
         requestedStock = Stocks(stock)
 
-        Graph(requestedStock, 250).create_graph()
+        Graph(requestedStock, 30).create_graph()
 
         # Change colour of embed depending on performance
         try: 
@@ -135,10 +135,10 @@ class Graph():
             else:
                 return day.replace('0', '')
 
-        def reformat_date(date):
-            day = remove_zero(date[8:10])
-            month = months[int(remove_zero(date[5:7]))-1]
-            return f"{day} {month}"
+        # def reformat_date(date):
+        #     day = remove_zero(date[8:10])
+        #     month = months[int(remove_zero(date[5:7]))-1]
+        #     return f"{day} {month}"
 
         closing_prices = closing_prices[::-1]
         price_dates = price_dates[::-1]
