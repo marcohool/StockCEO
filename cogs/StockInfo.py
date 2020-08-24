@@ -130,18 +130,11 @@ class Graph():
 
         closing_prices = closing_prices[::-1]
         price_dates = price_dates[::-1]
-        price_dates = [reformat_date(date) for date in price_dates]
 
+        length = len(closing_prices)
 
         # Create ticks list
-        increment = self.duration // 10
-        ticks = []
-        index = len(closing_prices)-1
-        while index > 0:
-            ticks.append(index)
-            index -= increment
-
-        ticks = tuple(ticks)
+        ticks = (0, length // 4, length // 2, (length // 4) * 3,  length - 1)
 
         mpl.rcParams['axes.spines.right'] = False
         mpl.rcParams['axes.spines.top'] = False
