@@ -2,7 +2,8 @@ from bs4 import BeautifulSoup
 from discord.ext import commands
 from ruamel.yaml import YAML
 import requests, discord, datetime, matplotlib as mpl, matplotlib.pyplot as plt
- 
+
+
 
 class StockInfo(commands.Cog):
     def __init__(self, bot):
@@ -13,7 +14,7 @@ class StockInfo(commands.Cog):
 
         requestedStock = Stocks(stock)
 
-        Graph(requestedStock, 100).create_graph()
+        Graph(requestedStock, 250).create_graph()
 
         # Change colour of embed depending on performance
         try: 
@@ -86,7 +87,6 @@ class Graph():
         self.stock = stock
         self.duration = duration
 
-
     def create_graph(self):
         today = datetime.date.today()
         dates = []
@@ -105,7 +105,7 @@ class Graph():
 
         # Get list of prices 
 
-        r = requests.get(f"http://api.marketstack.com/v1/eod?access_key={api_key}symbols={self.stock.getStockSymbol}&limit={self.duration}")
+        r = requests.get(f"http://api.marketstack.com/v1/eod?access_key={api_key}symbols={self.stock.getStockSymbol()}&limit={self.duration}")
         closing_prices = []
         price_dates = []
         json = r.json()
@@ -132,25 +132,28 @@ class Graph():
         price_dates = price_dates[::-1]
         price_dates = [reformat_date(date) for date in price_dates]
 
-        # Create ticks list
 
+        # Create ticks list
+        increment = self.duration // 10
         ticks = []
         index = len(closing_prices)-1
         while index > 0:
             ticks.append(index)
-            index -= 3
+            index -= increment
 
         ticks = tuple(ticks)
 
         mpl.rcParams['axes.spines.right'] = False
         mpl.rcParams['axes.spines.top'] = False
+        mpl.rcParams['axes.spines.left'] = False
+        plt.rcParams['ytick.left'] = False
         plt.rcParams['axes.facecolor'] = '2f3136'
         plt.rcParams['axes.edgecolor'] = 'white'
         plt.rcParams['figure.facecolor'] = '2f3136'
         plt.rcParams['text.color'] = 'white'
         plt.rcParams['axes.labelcolor'] = 'white'
-        mpl.rcParams['xtick.color'] = 'white'
-        mpl.rcParams['ytick.color'] = 'white'
+        plt.rcParams['ytick.color'] = 'white'
+        plt.rcParams['xtick.color'] = 'white'
 
         plt.plot(price_dates, closing_prices, color='green')
         plt.xticks(ticks)
