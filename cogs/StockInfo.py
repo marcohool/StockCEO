@@ -23,7 +23,7 @@ class StockInfo(commands.Cog):
             else:
                 color = discord.Color(value=int("FF0000", 16))
         except Exception:
-            await ctx.send("Please enter a valid stock symbol (e.g. TSLA)")
+            await ctx.send("I can't find that stock")
             return
 
         # Build embed
@@ -40,21 +40,25 @@ class Stocks():
     def __init__(self, stockSymbol):
         self.html = None
         self.stockSymbol = stockSymbol
-        self.stockName = self._searchSite()
+        self.stockName = self._searchSiteWithTicker()
 
         if (not self.stockName):
             self.stockSymbol = self.stockSymbol + ".l"
-            self.stockName = self._searchSite()
+            self.stockName = self._searchSiteWithTicker()
             if (not self.stockName):
-                return
+                self.stockSymbol = self.stockSymbol[:-2]
+                self._searchSite()
+                if (not self.stockName):
+                    return      
 
+        
         currency = self.html.find("div", {"C($tertiaryColor) Fz(12px)"}).text.split()
         self.currency = currency[len(currency)-1]
         self.price = self.html.find("span", {"Trsdu(0.3s) Fw(b) Fz(36px) Mb(-4px) D(ib)"}).text
         self.performance = self._getPerformance()
         self.description = self._getDescription()
 
-    def _searchSite(self):
+    def _searchSiteWithTicker(self):
         r = requests.get('https://finance.yahoo.com/quote/' + self.stockSymbol + '/')
         self.html = BeautifulSoup(r.text, features='html.parser')
 
@@ -63,6 +67,14 @@ class Stocks():
         except:
             return
     
+    def _searchSite(self):
+        print(self.stockSymbol)
+        r = requests.get('https://finance.yahoo.com/lookup?s=' + self.stockSymbol)
+        self.html = BeautifulSoup(r.text, features='html.parser')
+        self.stockSymbol = self.html.find_all('td', {"data-col0 Ta(start) Pstart(6px) Pend(15px)"})[0].text
+        self.stockName = self._searchSiteWithTicker()
+
+
     def _getPerformance(self):
         try:
             return self.html.find("span", {"Trsdu(0.3s) Fw(500) Pstart(10px) Fz(24px) C($positiveColor)"}).text.split()
