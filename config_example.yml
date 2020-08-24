@@ -1,11 +1,14 @@
 # Discord bot token
 Token: 
 
+# Stock API key
+API-Key:
+
 # Bot prefix
-Prefix: "!"
+Prefix: "$"
 
 # Discord IDs of owners
 Owners: 
 
 # Bot status displayed on Discord
-Watching Status: " over 100 stocks!"
+Watching Status: ""
