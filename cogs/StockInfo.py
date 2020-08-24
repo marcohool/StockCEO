@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 from discord.ext import commands
 import requests
 import discord
+from api import *
 
 class StockInfo(commands.Cog):
     def __init__(self, bot):
@@ -11,7 +12,9 @@ class StockInfo(commands.Cog):
     async def stats(self, ctx, stock: str):
 
         requestedStock = Stocks(stock)
-        
+
+        get_previous_month_graph(stock)
+
         # Change colour of embed depending on performance
         try: 
             if requestedStock.performance[1][1] == "+":
@@ -25,8 +28,10 @@ class StockInfo(commands.Cog):
         # Build embed
         embed = discord.Embed(title=(f"{requestedStock.stockName} | {requestedStock.currency}"), description = requestedStock.description, color = color)
         embed.add_field(name = "Current Price", value=(f"{requestedStock.price} {requestedStock.performance[1]}"), inline = True)
-        embed.set_image(url="https://cdn.discordapp.com/attachments/746874886475087992/747242226559615026/unknown.png")
-        await ctx.send(embed=embed)
+        # Get graph image
+        file = discord.File("./graph.png", filename="graph.png")
+        embed.set_image(url="attachment://graph.png")
+        await ctx.send(file=file, embed=embed)
 
 class Stocks():
 
