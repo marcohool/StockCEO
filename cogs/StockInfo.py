@@ -14,7 +14,7 @@ class StockInfo(commands.Cog):
 
         requestedStock = Stocks(stock)
 
-        Graph(requestedStock, 30).create_graph()
+        colour = Graph(requestedStock, 30).create_graph()
 
         # Change colour of embed depending on performance
         try: 
@@ -159,14 +159,21 @@ class Graph():
         plt.rcParams['axes.labelcolor'] = 'white'
         plt.rcParams['ytick.color'] = 'white'
         plt.rcParams['xtick.color'] = 'white'
-
+        plt.rcParams['ytick.labelbottom'] = True
         plt.plot(price_dates, closing_prices, color='green')
         plt.xticks(ticks)
         plt.grid(True, which='major', axis='y', linestyle='--')
         plt.title(f'{self.duration} Day Performance', loc='center', fontweight="bold", fontname="lucida sans")
         plt.savefig('./graph.png', bbox_inches='tight', pad_inches=0.1)
         plt.close()
- 
+
+        final_price = closing_prices[-1]
+        first_price = closing_prices[0]
+
+        if final_price >= first_price:
+            return "7EE622"
+        else:
+            return "FF0000"
 
 def setup(bot):
     bot.add_cog(StockInfo(bot))
