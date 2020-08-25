@@ -4,7 +4,6 @@ from ruamel.yaml import YAML
 import requests, discord, datetime, matplotlib as mpl, matplotlib.pyplot as plt
 
 
-
 class StockInfo(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -14,20 +13,18 @@ class StockInfo(commands.Cog):
 
         requestedStock = Stocks(stock)
 
+        # If requestedStock.price doens't exist then stock ticker was wrong
+        try:
+            requestedStock.price
+        except Exception:
+            await ctx.send("Please enter a valid ticker symbol (e.g. TSLA, GOOGL, AAPL)")
+            return
+            
+        # Creates graph as graph.png and returns colour depending on past month performance of the stock
         colour = Graph(requestedStock, 30).create_graph()
 
-        # Change colour of embed depending on performance
-        try: 
-            if requestedStock.performance[1][1] == "+":
-                color = discord.Color(value=int("7EE622", 16))
-            else:
-                color = discord.Color(value=int("FF0000", 16))
-        except Exception:
-            await ctx.send("I can't find that stock")
-            return
-
         # Build embed
-        embed = discord.Embed(title=(f"{requestedStock.stockName} | {requestedStock.currency}"), description = requestedStock.description, color = color)
+        embed = discord.Embed(title=(f"{requestedStock.stockName} | {requestedStock.currency}"), description = requestedStock.description, color = discord.Color(value=int(colour, 16)))
         embed.add_field(name = "Current Price", value=(f"{requestedStock.price} {requestedStock.performance[1]}"), inline = True)
         # Get graph image
         file = discord.File("./graph.png", filename="graph.png")
@@ -46,10 +43,7 @@ class Stocks():
             self.stockSymbol = self.stockSymbol + ".l"
             self.stockName = self._searchSiteWithTicker()
             if (not self.stockName):
-                self.stockSymbol = self.stockSymbol[:-2]
-                self._searchSite()
-                if (not self.stockName):
-                    return      
+                return     
 
         
         currency = self.html.find("div", {"C($tertiaryColor) Fz(12px)"}).text.split()
@@ -66,14 +60,6 @@ class Stocks():
             return self.html.find('h1', {"D(ib) Fz(18px)"}).text
         except:
             return
-    
-    def _searchSite(self):
-        print(self.stockSymbol)
-        r = requests.get('https://finance.yahoo.com/lookup?s=' + self.stockSymbol)
-        self.html = BeautifulSoup(r.text, features='html.parser')
-        self.stockSymbol = self.html.find_all('td', {"data-col0 Ta(start) Pstart(6px) Pend(15px)"})[0].text
-        self.stockName = self._searchSiteWithTicker()
-
 
     def _getPerformance(self):
         try:
@@ -84,7 +70,10 @@ class Stocks():
     def _getDescription(self):
         r = requests.get(f"https://uk.finance.yahoo.com/quote/{self.stockSymbol}/profile?p={self.stockSymbol}")
         self.html = BeautifulSoup(r.text, features='html.parser')
-        desc = self.html.find_all("p", {"class":"Mt(15px) Lh(1.6)"})[0].text.strip().split(".")
+        try:
+            desc = self.html.find_all("p", {"class":"Mt(15px) Lh(1.6)"})[0].text.strip().split(".")
+        except Exception:
+            return
         if (len(desc[0]) < 30):
             return (f"{desc[0]}. {desc[1]}.")
         return desc[0]+"."
@@ -106,10 +95,6 @@ class Graph():
             day = (today + datetime.timedelta(days=x)).strftime('%Y-%m-%d')
             dates.append(day)
 
-        months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'June', 'July', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-
-        # Get API key from config file 
-
         yaml = YAML()
         with open("./config.yml", "r", encoding="utf-8") as file:
             config = yaml.load(file)
@@ -126,19 +111,6 @@ class Graph():
             if stock['date'] > dates[0]:
                 closing_prices.append(stock['close'])
                 price_dates.append(stock['date'][:10])
-
-        # Reformat dates to 'day/month'
-
-        def remove_zero(day):
-            if day == '10' or day == '20' or day == '30':
-                return day
-            else:
-                return day.replace('0', '')
-
-        # def reformat_date(date):
-        #     day = remove_zero(date[8:10])
-        #     month = months[int(remove_zero(date[5:7]))-1]
-        #     return f"{day} {month}"
 
         closing_prices = closing_prices[::-1]
         price_dates = price_dates[::-1]
@@ -159,7 +131,6 @@ class Graph():
         plt.rcParams['axes.labelcolor'] = 'white'
         plt.rcParams['ytick.color'] = 'white'
         plt.rcParams['xtick.color'] = 'white'
-        plt.rcParams['ytick.labelbottom'] = True
         plt.plot(price_dates, closing_prices, color='green')
         plt.xticks(ticks)
         plt.grid(True, which='major', axis='y', linestyle='--')
