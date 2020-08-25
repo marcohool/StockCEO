@@ -41,6 +41,30 @@ class StockInfo(commands.Cog):
         if (not await requestedStock.checkValidStock()):
             return
 
+        if (timePeriod.endswith("m")):
+            timePeriod = int(timePeriod[:-1])
+            timePeriod = timePeriod*30
+        elif (timePeriod.endswith("y")):
+            timePeriod = int(timePeriod[:-1])
+            if (timePeriod > 1):
+                await ctx.send("Please enter a duration between 7 days (7d) and 1 year (1y)")
+                return
+            timePeriod = timePeriod*365
+        elif (timePeriod.endswith("w")):
+            timePeriod = int(timePeriod[:-1])
+            timePeriod = timePeriod*7
+        else:
+            if (timePeriod.endswith("d")):
+                timePeriod = int(timePeriod[:-1])
+            try:
+                if (int(timePeriod) < 7):
+                    await ctx.send("Please enter a duration between `7 days (7d)` and `1 year (1y)`")
+                    return
+            except Exception:
+                await ctx.send("Please follow the format: `$graph [ticker symbol] [duration]` \n\nFor example: `$graph AAPL 6m`." +
+                               " Please note we can only provide graphs for the duration of the past 1 week and 1 year")
+                return
+
         colour = Graph(requestedStock, int(timePeriod)).create_graph()
 
         embed = discord.Embed(
