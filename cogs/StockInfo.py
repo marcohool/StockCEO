@@ -17,7 +17,7 @@ class StockInfo(commands.Cog):
 
         requestedStock = Stocks(stock, ctx)
 
-        if (not await requestedStock._checkValidStock()):
+        if (not await requestedStock.checkValidStock()):
             return
 
         # Creates graph as graph.png and returns colour depending on past month performance of the stock
@@ -36,25 +36,29 @@ class StockInfo(commands.Cog):
 
     @commands.command()
     async def graph(self, ctx, stock: str, timePeriod: str):
+
         requestedStock = Stocks(stock, ctx)
 
+        # If stock isn't valid, don't excecute
         if (not await requestedStock.checkValidStock()):
             return
 
-        if (timePeriod.endswith("m")):
+        timePeriodEnding = timePeriod[len(timePeriod)-1]
+
+        if (timePeriodEnding == "m"):
             timePeriod = int(timePeriod[:-1])
             timePeriod = timePeriod*30
-        elif (timePeriod.endswith("y")):
+        elif (timePeriodEnding == "y"):
             timePeriod = int(timePeriod[:-1])
             if (timePeriod > 1):
                 await ctx.send("Please enter a duration between 7 days (7d) and 1 year (1y)")
                 return
             timePeriod = timePeriod*365
-        elif (timePeriod.endswith("w")):
+        elif (timePeriodEnding == "w"):
             timePeriod = int(timePeriod[:-1])
             timePeriod = timePeriod*7
         else:
-            if (timePeriod.endswith("d")):
+            if (timePeriodEnding == "d"):
                 timePeriod = int(timePeriod[:-1])
             try:
                 if (int(timePeriod) < 7):
@@ -79,13 +83,14 @@ class Stocks():
     def __init__(self, stockSymbol, ctx):
         self.html = None
         self.stockSymbol = stockSymbol
+        self.valid = True
         self.stockName = self._searchSiteWithTicker()
         self.ctx = ctx
 
-        if (not self.stockName):
+        if (self.valid == False):
             self.stockSymbol = self.stockSymbol + ".l"
-            self.stockName = self._searchSiteWithTicker()
-            if (not self.stockName):
+            self._searchSiteWithTicker()
+            if (self.valid == False):
                 return
 
         currency = self.html.find(
@@ -104,7 +109,7 @@ class Stocks():
         try:
             return self.html.find('h1', {"D(ib) Fz(18px)"}).text
         except:
-            return
+            self.valid = False
 
     def _getPerformance(self):
         try:
@@ -126,13 +131,10 @@ class Stocks():
         return desc[0]+"."
 
     async def checkValidStock(self):
-        # If requestedStock.price doens't exist then stock ticker was wrong
-        try:
-            self.price
-            return True
-        except Exception:
+
+        if (self.valid == False):
             await self.ctx.send("Please enter a valid ticker symbol (e.g. TSLA, GOOGL, AAPL)")
-            return False
+        return self.valid
 
     def getStockSymbol(self):
         return self.stockSymbol
