@@ -6,6 +6,7 @@ import discord
 import datetime
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import mysql.connector
 
 
 class StockInfo(commands.Cog):
@@ -43,20 +44,20 @@ class StockInfo(commands.Cog):
         if (not await requestedStock.checkValidStock()):
             return
 
-        timePeriodEnding = timePeriod[len(timePeriod)-1]
+        timePeriodEnding = timePeriod[len(timePeriod) - 1]
 
         if (timePeriodEnding == "m"):
             timePeriod = int(timePeriod[:-1])
-            timePeriod = timePeriod*30
+            timePeriod = timePeriod * 30
         elif (timePeriodEnding == "y"):
             timePeriod = int(timePeriod[:-1])
             if (timePeriod > 1):
                 await ctx.send("Please enter a duration between 7 days (7d) and 1 year (1y)")
                 return
-            timePeriod = timePeriod*365
+            timePeriod = timePeriod * 365
         elif (timePeriodEnding == "w"):
             timePeriod = int(timePeriod[:-1])
-            timePeriod = timePeriod*7
+            timePeriod = timePeriod * 7
         else:
             if (timePeriodEnding == "d"):
                 timePeriod = int(timePeriod[:-1])
@@ -65,8 +66,8 @@ class StockInfo(commands.Cog):
                     await ctx.send("Please enter a duration between `7 days (7d)` and `1 year (1y)`")
                     return
             except Exception:
-                await ctx.send("Please follow the format: `$graph [ticker symbol] [duration]` \n\nFor example: `$graph AAPL 6m`." +
-                               " Please note we can only provide graphs for the duration of the past 1 week and 1 year")
+                await ctx.send("""Please follow the format: `$graph [ticker symbol] [duration]` \n\nFor example: `$graph AAPL 6m`.
+                                 Please note we can only provide graphs for the duration of the past 1 week and 1 year""")
                 return
 
         colour = Graph(requestedStock, int(timePeriod)).create_graph()
@@ -87,28 +88,27 @@ class Stocks():
         self.stockName = self._searchSiteWithTicker()
         self.ctx = ctx
 
-        if (self.valid == False):
+        if (not self.valid):
             self.stockSymbol = self.stockSymbol + ".l"
             self._searchSiteWithTicker()
-            if (self.valid == False):
+            if (not self.valid):
                 return
 
         currency = self.html.find(
             "div", {"C($tertiaryColor) Fz(12px)"}).text.split()
-        self.currency = currency[len(currency)-1]
+        self.currency = currency[len(currency) - 1]
         self.price = self.html.find(
             "span", {"Trsdu(0.3s) Fw(b) Fz(36px) Mb(-4px) D(ib)"}).text
         self.performance = self._getPerformance()
         self.description = self._getDescription()
 
     def _searchSiteWithTicker(self):
-        r = requests.get('https://finance.yahoo.com/quote/' +
-                         self.stockSymbol + '/')
+        r = requests.get('https://finance.yahoo.com/quote/self.stockSymbol')
         self.html = BeautifulSoup(r.text, features='html.parser')
 
         try:
             return self.html.find('h1', {"D(ib) Fz(18px)"}).text
-        except:
+        except Exception:
             self.valid = False
 
     def _getPerformance(self):
@@ -128,11 +128,11 @@ class Stocks():
             return
         if (len(desc[0]) < 30):
             return (f"{desc[0]}. {desc[1]}.")
-        return desc[0]+"."
+        return desc[0] + "."
 
     async def checkValidStock(self):
 
-        if (self.valid == False):
+        if (not self.valid):
             await self.ctx.send("Please enter a valid ticker symbol (e.g. TSLA, GOOGL, AAPL)")
         return self.valid
 
@@ -177,7 +177,7 @@ class Graph():
         length = len(closing_prices)
 
         # Create ticks list
-        ticks = (0, length // 4, length // 2, (length // 4) * 3,  length - 1)
+        ticks = (0, length // 4, length // 2, (length // 4) * 3, length - 1)
 
         mpl.rcParams['axes.spines.right'] = False
         mpl.rcParams['axes.spines.top'] = False
@@ -207,5 +207,59 @@ class Graph():
             return "FF0000"
 
 
+class StockAlert(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    @commands.command()
+    async def alert(self, ctx):
+        pass
+
+
+class Singleton:
+    def __init__(self, cls):
+        self._cls = cls
+
+    def Instance(self):
+        try:
+            return self._instance
+        except AttributeError:
+            self._instance = self._cls()
+            return self._instance
+
+    def __call__(self):
+        raise TypeError("Singleton must be accessed through Instance()")
+
+    def __instancecheck(self, inst):
+        return isinstance(inst, self._cls)
+
+
+@Singleton
+class DBConnection(object):
+    def __init__(self):
+
+        yaml = YAML()
+
+        with open("./config.yml", "r", encoding="utf-8") as file:
+            config = yaml.load(file)
+
+        try:
+            self.conn = mysql.connector.connect(
+                host=config["DB-Server"],
+                user=config["DB-Username"],
+                password=config["DB-Password"]
+            )
+        except Exception as e:
+            raise ConnectionError("Database connection failed ", e)
+    print("Conn successfull !")
+
+    def __str__(self):
+        return "Database connection object"
+
+    def getConn(self):
+        return self.conn
+
+
 def setup(bot):
     bot.add_cog(StockInfo(bot))
+    bot.add_cog(StockAlert(bot))

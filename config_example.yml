@@ -1,14 +1,23 @@
 # Discord bot token
-Token: 
+Token:
 
 # Stock API key
 API-Key:
+
+# Database host
+DB-Server:
+
+# Database username
+DB-Username:
+
+# Database password
+DB-Password:
 
 # Bot prefix
 Prefix: "$"
 
 # Discord IDs of owners
-Owners: 
+Owners:
 
 # Bot status displayed on Discord
 Watching Status: ""
