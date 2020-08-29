@@ -139,6 +139,9 @@ class Stocks():
     def getStockSymbol(self):
         return self.stockSymbol
 
+    def getPrice(self):
+        return self.price
+
 
 class Graph():
 
@@ -233,6 +236,20 @@ class StockAlert(commands.Cog):
             await ctx.send("Please set a difference between -50% and +50%")
             return
 
+        targetValue = float(requestedStock.getPrice().replace(
+            ",", "")) * (1 + int(differenceRaw) / 100)
+
+        if differenceRaw < 0:
+            targetValue = targetValue * -1
+
+        success = DBConnection.Instance().insertAlert(requestedStock.getStockSymbol(),
+                                                      targetValue, ctx.channel.id, ctx.guild.id, ctx.author.id)
+
+        if (success):
+            await ctx.send("There was an error with adding the alert")
+        else:
+            await ctx.send("Alert successfuly added :white_check_mark:")
+
 
 class Singleton:
     def __init__(self, cls):
@@ -252,7 +269,7 @@ class Singleton:
         return isinstance(inst, self._cls)
 
 
-@Singleton
+@ Singleton
 class DBConnection(object):
     def __init__(self):
 
@@ -270,6 +287,38 @@ class DBConnection(object):
         except Exception as e:
             raise ConnectionError("Database connection failed ", e)
     print("Conn successfull !")
+
+    def insertAlert(self, stockTicker, targetPrice, channelID, guildID, userID):
+
+        cursor = self.conn.cursor()
+
+        def execute(sql):
+            try:
+                cursor.execute(sql)
+                self.conn.commit()
+                return True
+            except Exception as e:
+                print(e)
+                self.conn.rollback()
+                return False
+
+        sql = f"""INSERT INTO sql2362237.tbl_GuildChannels(
+            GuildID, ChannelID)
+            VALUES ({guildID}, {channelID})"""
+
+        status = execute(sql)
+
+        if (not status):
+            return False
+        print(targetPrice)
+        sql = f"""INSERT INTO sql2362237.tbl_Alerts(
+            StockTicker, TargetPrice, UserID, GuildChannelID)
+            VALUES ('{stockTicker}', {targetPrice}, {userID}, {cursor.lastrowid})"""
+
+        status = execute(sql)
+
+        if (not status):
+            return False
 
     def __str__(self):
         return "Database connection object"
