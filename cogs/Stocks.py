@@ -103,7 +103,7 @@ class Stocks():
         self.description = self._getDescription()
 
     def _searchSiteWithTicker(self):
-        r = requests.get('https://finance.yahoo.com/quote/self.stockSymbol')
+        r = requests.get(f'https://finance.yahoo.com/quote/{self.stockSymbol}')
         self.html = BeautifulSoup(r.text, features='html.parser')
 
         try:
@@ -212,8 +212,26 @@ class StockAlert(commands.Cog):
         self.bot = bot
 
     @commands.command()
-    async def alert(self, ctx):
-        pass
+    async def addAlert(self, ctx, stock: str, difference: str):
+
+        requestedStock = Stocks(stock, ctx)
+
+        # If stock isn't valid, don't excecute
+        if (not await requestedStock.checkValidStock()):
+            return
+
+        try:
+            differenceRaw = int(difference)
+        except Exception:
+            try:
+                differenceRaw = int(difference[:-1])
+            except Exception:
+                await ctx.send("Please follow the format: `$addalert [stock ticker] [% change]`.\n\n For example: `$addalert TSLA -10%`.")
+                return
+
+        if (differenceRaw > 50 or differenceRaw < -50):
+            await ctx.send("Please set a difference between -50% and +50%")
+            return
 
 
 class Singleton:

@@ -14,6 +14,8 @@ class Help(commands.Cog):
             name="StockCEO", icon_url="https://cdn.discordapp.com/avatars/747147465735798914/20e537ad3284a9aa8fbc4cae81e9e236.png")
         embed.add_field(name=":chart_with_upwards_trend: Stocks",
                         value="`$stats [stock ticker]`, `$graph [stock ticker] [duration]`", inline=False)
+        embed.add_field(name=":stopwatch: Alerts",
+                        value="`&stats addalert [stock ticker] [% change]`", inline=False)
         embed.add_field(name=":wrench: Other", value="`$ping`", inline=False)
 
         await ctx.send(embed=embed)
