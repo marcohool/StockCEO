@@ -142,6 +142,12 @@ class Stocks():
     def getPrice(self):
         return self.price
 
+    def getStockName(self):
+        return self.stockName
+
+    def getCurrency(self):
+        return self.currency
+
 
 class Graph():
 
@@ -250,6 +256,28 @@ class StockAlert(commands.Cog):
         else:
             await ctx.send("Alert successfuly added :white_check_mark:")
 
+    @commands.command()
+    async def viewAlerts(self, ctx):
+
+        DBConnection.Instance().searchAlerts(ctx.author.id)
+
+        rs = DBConnection.Instance().getCursor()
+
+        if (rs.fetchall() == []):
+            await ctx.send("You don't have any alerts set! You can add alerts by using the command `$addalert [stock ticker] [% change]`")
+            return
+
+        message = f"**Current alerts for {ctx.author.mention}**\n\n"
+
+        for row in rs:
+            requestedStock = Stocks(row[1], ctx)
+            message = message + \
+                f"**{requestedStock.getStockName()}**: {row[2]} {requestedStock.getCurrency()}\n"
+
+        message = message + "\nYou will be tagged in the channel you created the alert when the above stocks reach their respective value."
+
+        await ctx.send(message)
+
 
 class Singleton:
     def __init__(self, cls):
@@ -290,34 +318,39 @@ class DBConnection(object):
 
     def insertAlert(self, stockTicker, targetPrice, channelID, guildID, userID):
 
-        cursor = self.conn.cursor()
-
-        def execute(sql):
-            try:
-                cursor.execute(sql)
-                self.conn.commit()
-                return True
-            except Exception as e:
-                print(e)
-                self.conn.rollback()
-                return False
-
         sql = f"""INSERT INTO sql2362237.tbl_GuildChannels(
             GuildID, ChannelID)
             VALUES ({guildID}, {channelID})"""
 
-        status = execute(sql)
+        status = self.execute(sql)
 
         if (not status):
             return False
-        print(targetPrice)
+
         sql = f"""INSERT INTO sql2362237.tbl_Alerts(
             StockTicker, TargetPrice, UserID, GuildChannelID)
-            VALUES ('{stockTicker}', {targetPrice}, {userID}, {cursor.lastrowid})"""
+            VALUES ('{stockTicker}', {targetPrice}, {userID}, {self.cursor.lastrowid})"""
 
-        status = execute(sql)
+        status = self.execute(sql)
 
         if (not status):
+            return False
+
+    def searchAlerts(self, authorID):
+
+        sql = f"SELECT * FROM sql2362237.tbl_Alerts WHERE UserID = '{authorID}'"
+
+        self.execute(sql)
+
+    def execute(self, sql):
+        try:
+            self.cursor = self.conn.cursor(buffered=True)
+            self.cursor.execute(sql)
+            self.conn.commit()
+            return True
+        except Exception as e:
+            print(e)
+            self.conn.rollback()
             return False
 
     def __str__(self):
@@ -325,6 +358,9 @@ class DBConnection(object):
 
     def getConn(self):
         return self.conn
+
+    def getCursor(self):
+        return self.cursor
 
 
 def setup(bot):

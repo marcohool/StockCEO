@@ -15,7 +15,7 @@ class Help(commands.Cog):
         embed.add_field(name=":chart_with_upwards_trend: Stocks",
                         value="`$stats [stock ticker]`, `$graph [stock ticker] [duration]`", inline=False)
         embed.add_field(name=":stopwatch: Alerts",
-                        value="`&stats addalert [stock ticker] [% change]`", inline=False)
+                        value="`$addalert [stock ticker] [% change]`, `$viewalerts`", inline=False)
         embed.add_field(name=":wrench: Other", value="`$ping`", inline=False)
 
         await ctx.send(embed=embed)
