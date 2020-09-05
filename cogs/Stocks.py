@@ -355,10 +355,10 @@ class DBConnection(object):
                 host=config["DB-Server"],
                 user=config["DB-Username"],
                 password=config["DB-Password"]
+                print("Conn successfull !")
             )
         except Exception as e:
             raise ConnectionError("Database connection failed ", e)
-    print("Conn successfull !")
 
     def insertAlert(self, stockTicker, targetPrice, channelID, guildID, userID):
 
