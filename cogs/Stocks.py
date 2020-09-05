@@ -2,6 +2,8 @@ from bs4 import BeautifulSoup
 from discord.ext import commands
 from ruamel.yaml import YAML
 import requests
+import os
+import json
 import discord
 import datetime
 import matplotlib as mpl
@@ -29,11 +31,16 @@ class StockInfo(commands.Cog):
                               description=requestedStock.description, color=discord.Color(value=int(colour, 16)))
         embed.add_field(name="Current Price", value=(
             f"{requestedStock.getPrice()} {requestedStock.getPerformance()[1]}"), inline=True)
-        embed.add_field(name="Day's Range", value=requestedStock.getDayRange(), inline=True)
-        embed.add_field(name="Previous Close", value=requestedStock.getPreviousClose(), inline=True)
-        embed.add_field(name="Market Cap", value=requestedStock.getMarketCap(), inline=True)   
-        embed.add_field(name="52 Week Range", value=requestedStock.get52WeekRange(), inline=True)
-        embed.add_field(name="Open", value=requestedStock.getOpen(), inline=True)
+        embed.add_field(name="Day's Range",
+                        value=requestedStock.getDayRange(), inline=True)
+        embed.add_field(name="Previous Close",
+                        value=requestedStock.getPreviousClose(), inline=True)
+        embed.add_field(name="Market Cap",
+                        value=requestedStock.getMarketCap(), inline=True)
+        embed.add_field(name="52 Week Range",
+                        value=requestedStock.get52WeekRange(), inline=True)
+        embed.add_field(
+            name="Open", value=requestedStock.getOpen(), inline=True)
 
         # Get graph image
         file = discord.File("./graph.png", filename="graph.png")
@@ -176,10 +183,10 @@ class Stocks():
 
     def getPerformance(self):
         return self.performance
-    
+
     def getPreviousClose(self):
         return self.previousClose
-    
+
     def getOpen(self):
         return self.open
 
@@ -202,23 +209,44 @@ class Graph():
     def create_graph(self):
         today = datetime.date.today()
         dates = []
+
         for x in range(-self.duration, 0):
             day = (today + datetime.timedelta(days=x)).strftime('%Y-%m-%d')
             dates.append(day)
 
-        yaml = YAML()
-        with open("./config.yml", "r", encoding="utf-8") as file:
-            config = yaml.load(file)
-        api_key = config["API-Key"]
+        def updateStockJSON():
+            print(f"Getting from API: {self.stock.getStockName()}")
+            yaml = YAML()
 
-        # Get list of prices
+            with open("./config.yml", "r", encoding="utf-8") as file:
+                config = yaml.load(file)
 
-        r = requests.get(
-            f"http://api.marketstack.com/v1/eod?access_key={api_key}symbols={self.stock.getStockSymbol()}&limit={self.duration}")
+            api_key = config["API-Key"]
+
+            r = requests.get(
+                f"http://api.marketstack.com/v1/eod?access_key={api_key}symbols={self.stock.getStockSymbol()}")
+
+            stockJson = r.json()
+
+            with open(f"jsons/{self.stock.getStockSymbol()}.json", "w") as write_file:
+                json.dump(stockJson, write_file)
+
+            return stockJson
+
+        jsonExists = False
+
+        for file in os.listdir("jsons"):
+            if file == f"{self.stock.getStockSymbol()}.json":
+                jsonExists = True
+                stockJson = json.load(open(f"jsons/{file}", "r"))
+
+        if not jsonExists:
+            stockJson = updateStockJSON()
+
         closing_prices = []
         price_dates = []
-        json = r.json()
-        data = json['data']
+
+        data = stockJson['data']
         for stock in data:
             if stock['date'] > dates[0]:
                 closing_prices.append(stock['close'])
@@ -354,9 +382,8 @@ class DBConnection(object):
             self.conn = mysql.connector.connect(
                 host=config["DB-Server"],
                 user=config["DB-Username"],
-                password=config["DB-Password"]
-                print("Conn successfull !")
-            )
+                password=config["DB-Password"])
+            print("Conn successfull !")
         except Exception as e:
             raise ConnectionError("Database connection failed ", e)
 
