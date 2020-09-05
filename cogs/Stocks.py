@@ -28,7 +28,13 @@ class StockInfo(commands.Cog):
         embed = discord.Embed(title=(f"{requestedStock.stockName} | {requestedStock.currency}"),
                               description=requestedStock.description, color=discord.Color(value=int(colour, 16)))
         embed.add_field(name="Current Price", value=(
-            f"{requestedStock.price} {requestedStock.performance[1]}"), inline=True)
+            f"{requestedStock.getPrice()} {requestedStock.getPerformance()[1]}"), inline=True)
+        embed.add_field(name="Day's Range", value=requestedStock.getDayRange(), inline=True)
+        embed.add_field(name="Previous Close", value=requestedStock.getPreviousClose(), inline=True)
+        embed.add_field(name="Market Cap", value=requestedStock.getMarketCap(), inline=True)   
+        embed.add_field(name="52 Week Range", value=requestedStock.get52WeekRange(), inline=True)
+        embed.add_field(name="Open", value=requestedStock.getOpen(), inline=True)
+
         # Get graph image
         file = discord.File("./graph.png", filename="graph.png")
         embed.set_image(url="attachment://graph.png")
@@ -94,6 +100,7 @@ class Stocks():
             if (not self.valid):
                 return
 
+        self._getSummaryItems()
         currency = self.html.find(
             "div", {"C($tertiaryColor) Fz(12px)"}).text.split()
         self.currency = currency[len(currency) - 1]
@@ -110,6 +117,25 @@ class Stocks():
             return self.html.find('h1', {"D(ib) Fz(18px)"}).text
         except Exception:
             self.valid = False
+
+    def _getSummaryItems(self):
+        allSummaryItems = []
+        table = self.html.find_all('table')
+        for row in table[0].find_all("tr"):
+            for cell in row.findAll("td")[1::2]:
+                allSummaryItems.append(cell.text)
+
+        for row in table[1].find_all("tr"):
+            for cell in row.findAll("td")[1::2]:
+                allSummaryItems.append(cell.text)
+
+        # Previous Close, Open, Bid, Ask, Day's Range, 52 Week Range, Volume, Avg.Volume, Market Cap, Beta (5Y Monthly), PE Ration etc
+
+        self.previousClose = allSummaryItems[0]
+        self.open = allSummaryItems[1]
+        self.dayRange = allSummaryItems[4]
+        self.week52Range = allSummaryItems[5]
+        self.marketCap = allSummaryItems[8]
 
     def _getPerformance(self):
         try:
@@ -147,6 +173,24 @@ class Stocks():
 
     def getCurrency(self):
         return self.currency
+
+    def getPerformance(self):
+        return self.performance
+    
+    def getPreviousClose(self):
+        return self.previousClose
+    
+    def getOpen(self):
+        return self.open
+
+    def getDayRange(self):
+        return self.dayRange
+
+    def get52WeekRange(self):
+        return self.week52Range
+
+    def getMarketCap(self):
+        return self.marketCap
 
 
 class Graph():
