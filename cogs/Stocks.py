@@ -4,7 +4,9 @@ from ruamel.yaml import YAML
 import requests
 import os
 import json
+import time
 import discord
+from datetime import date
 import datetime
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -237,8 +239,12 @@ class Graph():
 
         for file in os.listdir("jsons"):
             if file == f"{self.stock.getStockSymbol()}.json":
-                jsonExists = True
-                stockJson = json.load(open(f"jsons/{file}", "r"))
+                lastModify = os.path.getmtime(f"jsons/{file}")
+                modificationTime = time.strftime(
+                    '%Y-%m-%d', time.localtime(lastModify))
+                if (modificationTime == str(date.today())):
+                    jsonExists = True
+                    stockJson = json.load(open(f"jsons/{file}", "r"))
 
         if not jsonExists:
             stockJson = updateStockJSON()
@@ -335,13 +341,15 @@ class StockAlert(commands.Cog):
 
         rs = DBConnection.Instance().getCursor()
 
-        if (rs.fetchall() == []):
+        data = rs.fetchall()
+
+        if (data == []):
             await ctx.send("You don't have any alerts set! You can add alerts by using the command `$addalert [stock ticker] [% change]`")
             return
 
         message = f"**Current alerts for {ctx.author.mention}**\n\n"
 
-        for row in rs:
+        for row in data:
             requestedStock = Stocks(row[1], ctx)
             message = message + \
                 f"**{requestedStock.getStockName()}**: {row[2]} {requestedStock.getCurrency()}\n"
